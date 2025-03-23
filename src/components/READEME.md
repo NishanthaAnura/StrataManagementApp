@@ -1,0 +1,1 @@
+Components use across the app go in this folder.
