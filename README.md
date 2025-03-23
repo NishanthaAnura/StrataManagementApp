@@ -1,4 +1,25 @@
-# React + TypeScript + Vite
+
+# Strata Management Portal
+A Strata Management Company manages multiple buildings and their associated owners, tenants, and maintenance requests.
+
+### Navigate to the project directory
+```bash
+cd StrataManagement.App
+```
+
+### Install dependencies
+```bash
+npm install
+```
+
+### Running the Project
+
+Start the development server
+```bash
+npm run dev
+```
+ #### open browser use the
+ o + Enter
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
