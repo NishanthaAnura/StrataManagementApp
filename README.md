@@ -18,8 +18,12 @@ Start the development server
 ```bash
 npm run dev
 ```
- #### open browser use the
- o + Enter
+ #### use these keys to run the app on browser
+ - press o + enter to open in browser
+  - press r + enter to restart the server
+  - press u + enter to show server url
+  - press c + enter to clear console
+  - press q + enter to quit
 
  ### Customizing the UI
 * Material-UI: Use the sx prop or makeStyles to customize components.
