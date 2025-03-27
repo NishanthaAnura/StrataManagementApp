@@ -5,13 +5,17 @@ import {
   Box,
   Typography,
   Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
+  Avatar,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Stack,
+  Tooltip,
 } from "@mui/material";
+import { AccountCircle, Close, Add } from "@mui/icons-material";
 import MaintenanceTable from "../components/Common/MaintenanceTable";
 import MaintenanceForm from "../components/Common/MaintenanceForm";
 import api from "../api/api";
@@ -33,9 +37,9 @@ const TenantDashboard: React.FC = () => {
   const [selectedRequest, setSelectedRequest] =
     useState<MaintenanceRequestResponse | null>(null);
   const [hasProfile, setHasProfile] = useState<boolean>(false);
-  const [tenantProfile, setTenantProfile] = useState<TenantResponse | null>(
-    null
-  );
+  const [tenantProfile, setTenantProfile] = useState<TenantResponse | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [requestFormOpen, setRequestFormOpen] = useState(false);
 
   const checkTenantProfile = useCallback(async () => {
     try {
@@ -79,19 +83,6 @@ const TenantDashboard: React.FC = () => {
     fetchMaintenanceRequests();
   }, [checkTenantProfile, fetchBuildings, fetchMaintenanceRequests]);
 
-  const handleEditRequest = (request: MaintenanceRequestResponse) => {
-    setSelectedRequest(request);
-  };
-
-  const handleDeleteRequest = async (id: string) => {
-    try {
-      await api.delete(`/MaintenanceRequest/${id}`);
-      fetchMaintenanceRequests();
-    } catch (error) {
-      console.error("Failed to delete maintenance request:", error);
-    }
-  };
-
   const handleStatusChange = async (id: string, status: MaintenanceStatus) => {
     try {
       await api.put(`/MaintenanceRequest/${id}`, { Status: status });
@@ -101,15 +92,14 @@ const TenantDashboard: React.FC = () => {
     }
   };
 
-  const handleSubmitRequest: SubmitHandler<MaintenanceRequest> = async (
-    data
-  ) => {
+  const handleSubmitRequest: SubmitHandler<MaintenanceRequest> = async (data) => {
     try {
       if (selectedRequest) {
         await api.put(`/MaintenanceRequest/${selectedRequest.Id}`, data);
       } else {
         await api.post("/MaintenanceRequest", data);
       }
+      setRequestFormOpen(false);
       setSelectedRequest(null);
       fetchMaintenanceRequests();
     } catch (error) {
@@ -117,77 +107,177 @@ const TenantDashboard: React.FC = () => {
     }
   };
 
+  const handleNewRequestClick = () => {
+    setSelectedRequest(null);
+    setRequestFormOpen(true);
+  };
+
   if (!hasProfile) {
-    return null; // Redirect to profile creation is handled in useEffect
+    return null;
   }
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Tenant Dashboard
-      </Typography>
-      <Button onClick={logout}>Logout</Button>
-
-      {/* Display Tenant Profile Data */}
-      {tenantProfile && (
-        <Box sx={{ mt: 3, mb: 3 }}>
-          <Typography variant="h5" gutterBottom>
-            Profile Information
-          </Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableBody>
-                <TableRow>
-                  <TableCell>
-                    <strong>Name</strong>
-                  </TableCell>
-                  <TableCell>{tenantProfile.Name}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>
-                    <strong>Contact</strong>
-                  </TableCell>
-                  <TableCell>{tenantProfile.Contact}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>
-                    <strong>Assigned Building</strong>
-                  </TableCell>
-                  <TableCell>
-                    {tenantProfile.Building.Name} (
-                    {tenantProfile.Building.Address})
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>
-                    <strong>Assigned Unit</strong>
-                  </TableCell>
-                  <TableCell>{tenantProfile.AssignedUnit}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
+    <Box sx={{ maxWidth: 1400, mx: "auto", p: 3 }}>
+      {/* Header Section */}
+      <Box sx={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center", 
+        mb: 4,
+        position: 'relative'
+      }}>
+        <Box sx={{ flex: 1 }} /> 
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          sx={{ 
+            fontWeight: 600,
+            textAlign: 'center',
+            flex: 1
+          }}
+        >
+          Tenant Dashboard
+        </Typography>
+        <Box sx={{ 
+          display: "flex", 
+          justifyContent: "flex-end",
+          flex: 1
+        }}>
+          <IconButton onClick={() => setProfileOpen(true)} sx={{ p: 0 }}>
+            <Avatar sx={{ bgcolor: "primary.main" }}>
+              <AccountCircle />
+            </Avatar>
+          </IconButton>
         </Box>
-      )}
+      </Box>
 
-      <Typography variant="h5" gutterBottom>
-        Maintenance Requests
-      </Typography>
-      <MaintenanceForm
-        onSubmit={handleSubmitRequest}
-        defaultValues={selectedRequest || undefined}
-        buildings={buildings}
-        canEditBuilding={false} // Tenants cannot change the building
-        assignedBuildingId={tenantProfile?.BuildingId} // Pass the tenant's assigned building ID
-        assignedUnit={tenantProfile?.AssignedUnit}
-      />
-      <MaintenanceTable
-        requests={requests}
-        onEdit={handleEditRequest}
-        onDelete={handleDeleteRequest}
-        onStatusChange={handleStatusChange}
-        canEditStatus={false} // Tenants cannot change the status
-      />
+      {/* Maintenance Requests Section */}
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 2 
+        }}>
+          <Typography variant="h5" component="h2" sx={{ fontWeight: 500 }}>
+            Maintenance Requests
+          </Typography>
+          <Tooltip title="Create New Request">
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={handleNewRequestClick}
+              sx={{ textTransform: "none" }}
+            >
+              New Request
+            </Button>
+          </Tooltip>
+        </Box>
+        <Box sx={{ width: '100%', overflowX: 'auto' }}>
+          <MaintenanceTable
+            requests={requests}
+            onStatusChange={handleStatusChange}
+            canEditStatus={false}
+          />
+        </Box>
+      </Box>
+
+      {/* Profile Dialog */}
+      <Dialog open={profileOpen} onClose={() => setProfileOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="h6">Profile Information</Typography>
+          <IconButton onClick={() => setProfileOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {tenantProfile && (
+            <Stack spacing={2} sx={{ p: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Avatar sx={{ width: 64, height: 64, bgcolor: "primary.main" }}>
+                  <AccountCircle sx={{ fontSize: 40 }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h6">{tenantProfile.Name}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Tenant
+                  </Typography>
+                </Box>
+              </Box>
+              <Divider />
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
+                  Contact Information
+                </Typography>
+                <Typography>{tenantProfile.Contact}</Typography>
+              </Box>
+              <Divider />
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
+                  Property Information
+                </Typography>
+                <Typography>
+                  <strong>Building:</strong> {tenantProfile.Building.Name} ({tenantProfile.Building.Address})
+                </Typography>
+                <Typography>
+                  <strong>Unit:</strong> {tenantProfile.AssignedUnit}
+                </Typography>
+              </Box>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setProfileOpen(false)} color="primary">
+            Close
+          </Button>
+          <Button onClick={logout} color="error">
+            Logout
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Request Form Dialog */}
+      <Dialog 
+        open={requestFormOpen} 
+        onClose={() => setRequestFormOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="h6">
+            {selectedRequest ? "Edit Maintenance Request" : "Create Maintenance Request"}
+          </Typography>
+          <IconButton onClick={() => setRequestFormOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ pt: 2 }}>
+          <MaintenanceForm
+            onSubmit={(data) => {
+              handleSubmitRequest(data);
+              setRequestFormOpen(false);
+            }}
+            defaultValues={selectedRequest || undefined}
+            buildings={buildings}
+            canEditBuilding={false}
+            assignedBuildingId={tenantProfile?.BuildingId}
+            assignedUnit={tenantProfile?.AssignedUnit}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setRequestFormOpen(false)} sx={{ mr: 2 }}>
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            form="maintenance-form" 
+            variant="contained" 
+            color="primary"
+          >
+            {selectedRequest ? "Update Request" : "Create Request"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
